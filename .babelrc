@@ -1,0 +1,38 @@
+// 该文件是es6解析的一个配置
+// 开发的代码都放在src文件夹中
+{
+	// 制定转码规则 
+	"presets": [
+		[
+			"env",
+			{
+				"modules": false,
+				"targets": {
+					"browsers": [
+						"> 1%",
+						"last 2 versions",
+						"not ie <= 8"
+					]
+				}
+			}
+		],
+		"stage-2"
+	],
+	"plugins": [
+		"transform-vue-jsx",
+		"transform-runtime"
+	],
+	"env": {
+		"test": {
+			"presets": [
+				"env",
+				"stage-2"
+			],
+			"plugins": [
+				"transform-vue-jsx",
+				"transform-es2015-modules-commonjs",
+				"dynamic-import-node"
+			]
+		}
+	}
+}
