@@ -12,7 +12,6 @@ const formstream = require('formstream');
 const request = require('request')
 const path = require('path')
 const fs = require('fs')
-const https = require('https')
 let getData = (req, res, sql) => {
     sqlQueryResult(sql).then((result) => {
         res.send(result)
@@ -28,6 +27,27 @@ let deleteData = (req, res, sql) => {
     })
 }
 const allInterfaces = {
+    search: ( req, res ) => {
+
+    },
+    uploadTreeImage: ( req, res ) => {},
+    storedInfo: (req, res ) => {
+        const { nurName, nurPri, nurSize, nurPic, nurPhone, nurLocation } = req.body; 
+        let sql = `INSERT INTO tree_detail (name, address, phone, diameter, age ) VALUES ( '${nurName}', '${nurLocation}', '${nurPhone}', '${nurSize}', '${nurPri}')`;
+        sqlQueryResult(sql).then((result) => {
+            res.send('数据插入成功');
+        })
+    },
+    userInfo: (req, res ) => {
+        console.log( req.body )
+        res.send(('数据发送成功重新启动'))
+    },
+    getTree:(req, res ) => {
+        /**检索最新的10条记录 */
+        let sql = 'SELECT * FROM tree_detail ORDER BY detail_id DESC LIMIT 10';
+        getData( req, res, sql)
+    },
+
     getFailBox: (req, res) => {
         let query = req.query, sql;
         if (Object.keys(query).length > 1){

@@ -6,5 +6,5 @@
 const express = require('express');
 const boxRouter = require('../core/boxRouter')
 const router = express.Router();
-router.use('/', boxRouter)
+router.use('', boxRouter)
 module.exports = router;
