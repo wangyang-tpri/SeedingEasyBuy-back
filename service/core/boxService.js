@@ -1,7 +1,3 @@
-/**
- * @description 业务逻辑 API 模块
- * 在对发件箱 发送成功 发送失败 页面中的数据进行查找的话 需要使用user_id这个字段 对用户进行区分 然后才能进行查找
- */
 const queryStr = require('querystring')
 const sqlQueryResult = require('../utils/connecSql');
 const constant = require('../utils/constant');
@@ -12,6 +8,15 @@ const formstream = require('formstream');
 const request = require('request')
 const path = require('path')
 const fs = require('fs')
+const axios = require('axios')
+let Busboy = require('busboy')
+const connectMultiparty = require('connect-multiparty')()
+let data = {
+    'grant_type': 'client_credential',
+    'appid': 'wxd0f21ffb38a7e3dd',
+    'secret':'1c638109cc0b96e1e8df9f45553bffd9'
+}
+
 let getData = (req, res, sql) => {
     sqlQueryResult(sql).then((result) => {
         res.send(result)
@@ -27,30 +32,111 @@ let deleteData = (req, res, sql) => {
     })
 }
 const allInterfaces = {
-    search: ( req, res ) => {
-
+    search: (req, res) => {
+        let { searchName } = req.query;
+        let sql = `SELECT * FROM tree_detail WHERE name = '${searchName}'`;
+        getData(req, res, sql)
     },
-    uploadTreeImage: ( req, res ) => {},
-    storedInfo: (req, res ) => {
-        const { nurName, nurPri, nurSize, nurPic, nurPhone, nurLocation } = req.body; 
-        let sql = `INSERT INTO tree_detail (name, address, phone, diameter, age ) VALUES ( '${nurName}', '${nurLocation}', '${nurPhone}', '${nurSize}', '${nurPri}')`;
+    uploadTreeImage: (req, res) => {
+        let imageInfo = req.files.file;
+        let imageName = imageInfo.originalFilename;
+        let imagePath = `d:/image/${imageName}`;
+        const { messageId } = req.body
+        fs.mkdir('d:/image', { recursive: true }, (err) => {
+            err && console.log(err)
+        })
+        fs.readFile(imageInfo.path,'binary', (err, file) => {
+            fs.writeFile( imagePath , Buffer.from(file, 'binary'),  (err, data ) => {
+                if( !err ) {
+                    let sql = `INSERT INTO tree_pic ( pic_path, message_id ) VALUES ('${imagePath}', '${messageId}')`;
+                    sqlQueryResult(sql).then((result) => {
+                        res.send({
+                            code: 2,
+                            msg: '图片上传成功',
+                            data: imagePath
+                        })
+                    })
+                    /**图片在服务器上存储成功的话，在将其保存到数据库中 */
+                }
+            })
+        })
+        
+    },
+    storedInfo: (req, res) => {
+        const { nurName, nurPri, nurSize, nurPic, nurPhone, nurLocation, messageId } = req.body; 
+        let sql = `INSERT INTO tree_detail (name, address, phone, diameter, age, message_id ) VALUES ( '${nurName}', '${nurLocation}', '${nurPhone}', '${nurSize}', '${nurPri}', '${messageId}')`;
         sqlQueryResult(sql).then((result) => {
             res.send('数据插入成功');
         })
     },
-    userInfo: (req, res ) => {
-        console.log( req.body )
+    userInfo: (req, res) => {
+        console.log(req.body)
         res.send(('数据发送成功重新启动'))
     },
-    getTree:(req, res ) => {
+    getTree: (req, res) => {
         /**检索最新的10条记录 */
         let sql = 'SELECT * FROM tree_detail ORDER BY detail_id DESC LIMIT 10';
-        getData( req, res, sql)
+        getData(req, res, sql)
     },
-
+    getWeChartToken: (req, res) => {
+        let temCode = req.query.temCode;
+        if( temCode ) {
+            axios({
+                url: "https://api.weixin.qq.com/cgi-bin/token?" + queryStr.stringify(data),
+                method: "get",
+                headers: {
+                    'content-type': 'application/json'
+                }
+            }).then((res) => {
+                /**根据这个接口获取token 后 在结合token获取到对应用户的手机号 */
+                console.log( res.data )
+                let  access_token  = res.data.access_token;
+                let phoneParams = {
+                    'access_token': access_token,
+                }
+                axios({
+                    url: "https://api.weixin.qq.com/wxa/business/getuserphonenumber?" + queryStr.stringify( phoneParams ),
+                    method: 'post',
+                    data: {
+                        'code': temCode
+                    }
+                }).then( (res ) => {
+                    console.log( res.data )
+                })
+            })
+        }
+        res.send({
+            code: temCode
+        })
+    
+    },
+   getEachTreeInfo: (req, res) => {
+        let messageId  = req.query.messageId;
+        let sqlInfo = `SELECT * FROM tree_detail WHERE message_id ='${messageId}' `;
+        sqlQueryResult( sqlInfo ).then(( result ) => {
+            res.send({
+                msg: '数据获取成功',
+                data:  result
+            })
+        })
+    },
+    getEachTreeImage: (req, res) => {
+        let messageId  = req.query.messageId;
+        let picList = [];
+        let sqlImage = `SELECT * FROM tree_pic WHERE message_id = '${messageId}'`;
+        sqlQueryResult( sqlImage ).then( (result ) => {
+            result.forEach((item, index, arr) => {
+                picList.push( fs.readFileSync(item.pic_path, 'base64'));
+            })
+            res.send({
+                code: '图片获取成功',
+                data: picList
+            })
+        })
+    },
     getFailBox: (req, res) => {
         let query = req.query, sql;
-        if (Object.keys(query).length > 1){
+        if (Object.keys(query).length > 1) {
             sql = `SELECT * FROM fail_box WHERE box_date > '${query.sTime}' AND box_date < '${query.eTime}'`;
         } else {
             sql = "select * from fail_box";
@@ -63,13 +149,13 @@ const allInterfaces = {
         let userId = query.userId;
         if (Object.keys(query).length > 1) {
             sql = `SELECT * FROM send_box WHERE box_date > '${query.sTime}' AND box_date < '${query.eTime}' AND user_id = ${userId}`;
-        } else {           
+        } else {
             sql = `SELECT * FROM send_box WHERE user_id = ${userId}`;
         }
         getData(req, res, sql)
     },
     deleteSendBox: (req, res) => {
-        let {rowId, reciveName, context, title} = req.body;
+        let { rowId, reciveName, context, title } = req.body;
 
         let sql = "DELETE FROM send_box WHERE send_id = " + rowId + " LIMIT 1";
         let sqlDel = `INSERT INTO delete_box (recive_name, context, title) VALUES ('${reciveName}', '${context}', '${title}')`;
@@ -105,7 +191,7 @@ const allInterfaces = {
         getData(req, res, sql)
     },
     deleteSuccess: (req, res) => {
-        let {rowId, reciveName, context, title} = req.body;
+        let { rowId, reciveName, context, title } = req.body;
         /**
          * 将删除的数据插入到delete_box表中
          */
@@ -276,7 +362,7 @@ const allInterfaces = {
                     let resData = JSON.parse(body1)
                     let mediaId = resData.media_id;
                     let sql = `INSERT INTO thumb_image (image_name, thumb_media_id) VALUES ("${fileName}", "${mediaId}")`;
-                    sqlQueryResult(sql).then((result) =>{
+                    sqlQueryResult(sql).then((result) => {
                         res.send({
                             code: 1,
                             msg: '图片上传成功'
@@ -326,7 +412,7 @@ const allInterfaces = {
                 })
             } else {
                 sqlQueryResult(insertSql).then((result) => {
-                    sqlQueryResult(updateSql).then((result) => {})
+                    sqlQueryResult(updateSql).then((result) => { })
                     res.send({
                         code: 1,
                         msg: '用户创建成功'
@@ -354,43 +440,43 @@ const allInterfaces = {
      * @param {object} res 
      */
     deleteAllGroupUsers: (req, res) => {
-        let {groupName} = req.body;
+        let { groupName } = req.body;
         let sql = `DELETE FROM register_user WHERE group_name = '${groupName}'`;
         deleteData(req, res, sql);
     },
     getUserInfo: (req, res) => {
-        let {groupName} = req.body;
+        let { groupName } = req.body;
         let sql = `SELECT user_name FROM register_user WHERE group_name = '${groupName}'`;
         getData(req, res, sql);
     },
     addTemplate: (req, res) => {
-        let {name, user, title, digest, url, content, userId, employee, departy, totag} = req.body;
+        let { name, user, title, digest, url, content, userId, employee, departy, totag } = req.body;
         let sql = `INSERT INTO msg_template (tem_name, tem_user, tem_title, tem_digest, tem_url, tem_content, user_id, touser, toparty, totag) VALUES ('${name}', '${user}', '${title}','${digest}','${url}', '${content}',${userId}, '${employee}', '${departy}','${totag}')`;
         getData(req, res, sql);
     },
     getAllTem: (req, res) => {
-        let {userId} = req.query;
+        let { userId } = req.query;
         let sql = `SELECT tem_name FROM msg_template WHERE user_id = ${userId}`;
         getData(req, res, sql);
     },
     getSelfTem: (req, res) => {
-        let {userId, tem_name} = req.query;
+        let { userId, tem_name } = req.query;
         let sql = `SELECT * FROM msg_template WHERE user_id = ${userId} AND tem_name = '${tem_name}'`;
         getData(req, res, sql);
     },
     getAllDeleteData: (req, res) => {
 
-    
+
         let sql = `SELECT * FROM delete_box`;
         getData(req, res, sql);
     },
     deleteDataFromDeleteBox: (req, res) => {
-        let {id} = req.query;
+        let { id } = req.query;
         let sql = `DELETE FROM delete_box WHERE id = ${id}`;
         deleteData(req, res, sql);
     },
     saveKeyWords: (req, res) => {
-        let {keyWords} = req.body;
+        let { keyWords } = req.body;
         let sql = `INSERT INTO key_word (words) VALUE ('${keyWords}')`;
         sqlQueryResult(sql).then((result) => {
             res.send({
@@ -403,12 +489,12 @@ const allInterfaces = {
         getData(req, res, sql)
     },
     deleteKeyWord: (req, res) => {
-        let {word} = req.body;
-        let sql =  `DELETE FROM key_word WHERE words = '${word}'`;
+        let { word } = req.body;
+        let sql = `DELETE FROM key_word WHERE words = '${word}'`;
         deleteData(req, res, sql);
     },
     saveFailBox: (req, res) => {
-        let {reciveName, content, title, employee, departmentData, tag, digest} = req.body;
+        let { reciveName, content, title, employee, departmentData, tag, digest } = req.body;
         let sql = `INSERT INTO fail_box (recive_name, context, title, touser, toparty, totag, digest) VALUES ('${reciveName}', '${content}', '${title}','${employee}','${departmentData}','${tag}','${digest}')`;
         sqlQueryResult(sql).then((result) => {
             res.send({
