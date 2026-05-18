@@ -1,5 +1,8 @@
 package com.nursery.common;
 
+import lombok.Data;
+
+@Data
 public class Result<T> {
     private int code;
     private String message;
@@ -9,7 +12,7 @@ public class Result<T> {
 
     public static <T> Result<T> ok(T data) {
         Result<T> r = new Result<>();
-        r.code = 200;
+        r.code = Constants.CODE_SUCCESS;
         r.message = "success";
         r.data = data;
         return r;
@@ -29,11 +32,4 @@ public class Result<T> {
     public static <T> Result<T> fail(String message) {
         return fail(500, message);
     }
-
-    public int getCode() { return code; }
-    public void setCode(int code) { this.code = code; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    public T getData() { return data; }
-    public void setData(T data) { this.data = data; }
 }
