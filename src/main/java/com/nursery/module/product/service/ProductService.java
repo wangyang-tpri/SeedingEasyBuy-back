@@ -1,5 +1,6 @@
 package com.nursery.module.product.service;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,9 +11,15 @@ import com.nursery.module.product.entity.ProductImage;
 import com.nursery.module.product.mapper.ProductMapper;
 import com.nursery.module.product.mapper.ProductSkuMapper;
 import com.nursery.module.product.mapper.ProductImageMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,5 +94,65 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         wrapper.eq(Product::getStatus, Constants.PRODUCT_ON_SHELF)
                .like(Product::getName, keyword);
         return page(new Page<>(page, size), wrapper);
+    }
+
+    public Product create(Product product, List<String> imageUrls) {
+        if (product.getShopId() == null) {
+            product.setShopId(1L);
+        }
+        if (product.getStatus() == null) {
+            product.setStatus(Constants.PRODUCT_ON_SHELF);
+        }
+        if (product.getSales() == null) {
+            product.setSales(0);
+        }
+        if (product.getSort() == null) {
+            product.setSort(0);
+        }
+        if (product.getHasSku() == null) {
+            product.setHasSku(0);
+        }
+        if (product.getMinQuantity() == null) {
+            product.setMinQuantity(1);
+        }
+        save(product);
+
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            for (int i = 0; i < imageUrls.size(); i++) {
+                ProductImage img = new ProductImage();
+                img.setProductId(product.getId());
+                img.setImageUrl(imageUrls.get(i));
+                img.setImageType(i == 0 ? 0 : 1);
+                img.setSortOrder(i);
+                imageMapper.insert(img);
+            }
+        }
+
+        return product;
+    }
+
+    @Value("${upload.path:./uploads/}")
+    private String uploadPath;
+
+    public String uploadImage(MultipartFile file) {
+        try {
+            Path path = Paths.get(uploadPath);
+            if (!path.isAbsolute()) {
+                path = Paths.get(System.getProperty("user.dir")).resolve(path);
+            }
+            File dir = path.toFile();
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            String originalName = file.getOriginalFilename();
+            String ext = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf(".")) : ".jpg";
+            String fileName = IdUtil.fastSimpleUUID() + ext;
+            File dest = new File(dir, fileName);
+            file.transferTo(dest);
+            return "/api/file/" + fileName;
+        } catch (IOException e) {
+            throw new RuntimeException("图片上传失败: " + e.getMessage(), e);
+        }
     }
 }
