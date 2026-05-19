@@ -39,7 +39,10 @@ public class CartService extends ServiceImpl<CartMapper, Cart> {
         Map<Long, List<Map<String, Object>>> shopMap = new LinkedHashMap<>();
         for (Cart item : items) {
             Product product = productMapper.selectById(item.getProductId());
-            if (product == null || product.getStatus() == 0) continue;
+            if (product == null || product.getStatus() == 0) {
+                baseMapper.deleteById(item.getId());
+                continue;
+            }
             Map<String, Object> vo = new HashMap<>();
             vo.put("id", item.getId());
             vo.put("productId", product.getId());

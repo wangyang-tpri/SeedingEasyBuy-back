@@ -14,6 +14,8 @@ import com.nursery.module.order.entity.Order;
 import com.nursery.module.order.entity.OrderItem;
 import com.nursery.module.order.mapper.OrderMapper;
 import com.nursery.module.order.mapper.OrderItemMapper;
+import com.nursery.module.address.entity.Address;
+import com.nursery.module.address.mapper.AddressMapper;
 import com.nursery.module.product.entity.Product;
 import com.nursery.module.product.entity.ProductSku;
 import com.nursery.module.product.mapper.ProductMapper;
@@ -33,6 +35,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     @Resource private CartMapper cartMapper;
     @Resource private ProductMapper productMapper;
     @Resource private ProductSkuMapper skuMapper;
+    @Resource private AddressMapper addressMapper;
 
     private Long getUserId() { return TokenContext.getUserId(); }
 
@@ -47,15 +50,22 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         cartWrapper.eq(Cart::getUserId, userId).eq(Cart::getSelected, 1);
         List<Cart> cartItems = cartMapper.selectList(cartWrapper);
 
-        if (cartItems.isEmpty()) {
-            throw new BusinessException("请选择要购买的商品");
-        }
-
-        // Group by shop (simplified: use first product's shop)
+        // Filter out invalid products (deleted/off-shelf), remove from cart
+        List<Cart> validItems = new ArrayList<>();
         Long shopId = null;
         for (Cart ci : cartItems) {
             Product p = productMapper.selectById(ci.getProductId());
-            if (p != null) { shopId = p.getShopId(); break; }
+            if (p == null || p.getStatus() != Constants.PRODUCT_ON_SHELF) {
+                cartMapper.deleteById(ci.getId());
+                continue;
+            }
+            if (shopId == null) shopId = p.getShopId();
+            validItems.add(ci);
+        }
+        cartItems = validItems;
+
+        if (cartItems.isEmpty()) {
+            throw new BusinessException("没有可结算的商品，请重新添加");
         }
         if (shopId == null) throw new BusinessException("商品不存在");
 
@@ -64,8 +74,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
 
         for (Cart ci : cartItems) {
             Product product = productMapper.selectById(ci.getProductId());
+            // Already filtered in create(), but double-check for safety
             if (product == null || product.getStatus() != Constants.PRODUCT_ON_SHELF) {
-                throw new BusinessException("商品【" + (product != null ? product.getName() : "") + "】已下架");
+                cartMapper.deleteById(ci.getId());
+                continue;
             }
 
             BigDecimal price = product.getPrice();
@@ -109,9 +121,19 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setFreight(BigDecimal.ZERO);
         order.setDiscount(BigDecimal.ZERO);
         order.setStatus(Constants.ORDER_PENDING_PAY);
-        order.setReceiverName("");
-        order.setReceiverPhone("");
-        order.setReceiverAddress("");
+        // Fill receiver info from address
+        if (addressId != null) {
+            Address addr = addressMapper.selectById(addressId);
+            if (addr != null) {
+                order.setReceiverName(addr.getReceiverName() != null ? addr.getReceiverName() : "");
+                order.setReceiverPhone(addr.getPhone() != null ? addr.getPhone() : "");
+                order.setReceiverAddress(addr.getFullAddress() != null ? addr.getFullAddress() : (addr.getDetailAddress() != null ? addr.getDetailAddress() : ""));
+            }
+        } else {
+            order.setReceiverName("");
+            order.setReceiverPhone("");
+            order.setReceiverAddress("");
+        }
         order.setUserMessage(message);
         save(order);
 
