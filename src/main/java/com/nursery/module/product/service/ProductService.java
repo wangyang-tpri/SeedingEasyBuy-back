@@ -96,6 +96,32 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return page(new Page<>(page, size), wrapper);
     }
 
+    public void updateImages(Long productId, String imagesJson) {
+        LambdaQueryWrapper<ProductImage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductImage::getProductId, productId);
+        imageMapper.delete(wrapper);
+
+        if (imagesJson != null && !imagesJson.isEmpty()) {
+            try {
+                List<String> urls = cn.hutool.json.JSONUtil.toList(imagesJson, String.class);
+                for (int i = 0; i < urls.size(); i++) {
+                    ProductImage img = new ProductImage();
+                    img.setProductId(productId);
+                    img.setImageUrl(urls.get(i));
+                    img.setImageType(i == 0 ? 0 : 1);
+                    img.setSortOrder(i);
+                    imageMapper.insert(img);
+                }
+            } catch (Exception e) {}
+        }
+    }
+
+    public List<Product> myProducts() {
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(Product::getCreateTime);
+        return list(wrapper);
+    }
+
     public Product create(Product product, List<String> imageUrls) {
         if (product.getShopId() == null) {
             product.setShopId(1L);

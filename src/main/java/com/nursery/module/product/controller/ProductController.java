@@ -3,6 +3,7 @@ package com.nursery.module.product.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nursery.common.Constants;
 import com.nursery.common.PageResult;
 import com.nursery.common.Result;
 import com.nursery.module.product.entity.Product;
@@ -77,6 +78,7 @@ public class ProductController {
         product.setStock(body.get("stock") != null ? Integer.valueOf(body.get("stock").toString()) : 0);
         product.setUnit((String) body.get("unit"));
         product.setContactPhone((String) body.get("phone"));
+        product.setAddress((String) body.get("address"));
         product.setVideo((String) body.get("video"));
         product.setImages((String) body.get("images"));
         product.setSpecs((String) body.get("specs"));
@@ -97,5 +99,47 @@ public class ProductController {
         Map<String, Object> result = new java.util.HashMap<>();
         result.put("id", saved.getId());
         return Result.ok(result);
+    }
+
+    @GetMapping("/my")
+    public Result<List<Product>> myProducts() {
+        return Result.ok(productService.myProducts());
+    }
+
+    @PutMapping("/update/{id}")
+    public Result<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Product product = productService.getById(id);
+        if (product == null) return Result.fail("商品不存在");
+        if (body.containsKey("name")) product.setName((String) body.get("name"));
+        if (body.containsKey("subtitle")) product.setSubtitle((String) body.get("subtitle"));
+        if (body.containsKey("categoryId")) product.setCategoryId(Long.valueOf(body.get("categoryId").toString()));
+        if (body.containsKey("description")) product.setDescription((String) body.get("description"));
+        if (body.containsKey("price")) product.setPrice(new BigDecimal(body.get("price").toString()));
+        if (body.containsKey("originalPrice")) product.setOriginalPrice(body.get("originalPrice") != null ? new BigDecimal(body.get("originalPrice").toString()) : null);
+        if (body.containsKey("stock")) product.setStock(Integer.valueOf(body.get("stock").toString()));
+        if (body.containsKey("unit")) product.setUnit((String) body.get("unit"));
+        if (body.containsKey("phone")) product.setContactPhone((String) body.get("phone"));
+        if (body.containsKey("address")) product.setAddress((String) body.get("address"));
+        if (body.containsKey("video")) product.setVideo((String) body.get("video"));
+        if (body.containsKey("images")) product.setImages((String) body.get("images"));
+        if (body.containsKey("specs")) product.setSpecs((String) body.get("specs"));
+        productService.updateById(product);
+
+        // Update image records
+        String imagesStr = (String) body.get("images");
+        if (imagesStr != null) {
+            productService.updateImages(id, imagesStr);
+        }
+
+        return Result.ok();
+    }
+
+    @PostMapping("/status/{id}")
+    public Result<?> toggleStatus(@PathVariable Long id) {
+        Product product = productService.getById(id);
+        if (product == null) return Result.fail("商品不存在");
+        product.setStatus(product.getStatus() == Constants.PRODUCT_ON_SHELF ? Constants.PRODUCT_OFF_SHELF : Constants.PRODUCT_ON_SHELF);
+        productService.updateById(product);
+        return Result.ok();
     }
 }

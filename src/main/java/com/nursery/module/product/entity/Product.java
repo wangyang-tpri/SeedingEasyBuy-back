@@ -26,6 +26,7 @@ public class Product {
     private Integer hasSku;
     private String unit;
     private String contactPhone;
+    private String address;
     private Integer minQuantity;
     private Integer status;
     private Integer sort;
