@@ -76,6 +76,8 @@ public class ProductController {
         product.setOriginalPrice(body.get("originalPrice") != null ? new BigDecimal(body.get("originalPrice").toString()) : null);
         product.setStock(body.get("stock") != null ? Integer.valueOf(body.get("stock").toString()) : 0);
         product.setUnit((String) body.get("unit"));
+        product.setContactPhone((String) body.get("phone"));
+        product.setVideo((String) body.get("video"));
         product.setImages((String) body.get("images"));
         product.setSpecs((String) body.get("specs"));
 
