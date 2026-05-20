@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("product_sku")
 public class ProductSku {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long productId;
     private String skuName;

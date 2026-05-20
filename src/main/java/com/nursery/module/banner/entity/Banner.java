@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @TableName("banner")
 public class Banner {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String title;
     private String imageUrl;

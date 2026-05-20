@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @TableName("review")
 public class Review {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long orderId;
     private Long orderItemId;

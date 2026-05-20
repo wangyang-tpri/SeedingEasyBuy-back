@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("collection")
 public class Favorites {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long userId;
     private Long productId;

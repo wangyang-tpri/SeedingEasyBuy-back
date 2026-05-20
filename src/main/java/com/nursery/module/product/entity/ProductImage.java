@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("product_image")
 public class ProductImage {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long productId;
     private String imageUrl;
