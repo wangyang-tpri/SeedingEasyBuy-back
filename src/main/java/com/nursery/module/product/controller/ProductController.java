@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nursery.common.Constants;
 import com.nursery.common.PageResult;
 import com.nursery.common.Result;
+import com.nursery.interceptor.TokenContext;
 import com.nursery.module.product.entity.Product;
 import com.nursery.module.product.service.ProductService;
 import org.springframework.web.bind.annotation.*;
@@ -77,6 +78,7 @@ public class ProductController {
         product.setOriginalPrice(body.get("originalPrice") != null ? new BigDecimal(body.get("originalPrice").toString()) : null);
         product.setStock(body.get("stock") != null ? Integer.valueOf(body.get("stock").toString()) : 0);
         product.setUnit((String) body.get("unit"));
+        product.setUserId(TokenContext.getUserId());
         product.setContactPhone((String) body.get("phone"));
         product.setAddress((String) body.get("address"));
         product.setVideo((String) body.get("video"));
@@ -103,7 +105,8 @@ public class ProductController {
 
     @GetMapping("/my")
     public Result<List<Product>> myProducts() {
-        return Result.ok(productService.myProducts());
+        Long userId = TokenContext.getUserId();
+        return Result.ok(productService.myProducts(userId));
     }
 
     @PutMapping("/update/{id}")

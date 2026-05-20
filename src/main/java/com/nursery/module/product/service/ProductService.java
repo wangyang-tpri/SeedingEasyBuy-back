@@ -116,9 +116,9 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         }
     }
 
-    public List<Product> myProducts() {
+    public List<Product> myProducts(Long userId) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByDesc(Product::getCreateTime);
+        wrapper.eq(Product::getUserId, userId).orderByDesc(Product::getCreateTime);
         return list(wrapper);
     }
 

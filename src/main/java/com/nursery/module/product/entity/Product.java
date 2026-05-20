@@ -25,6 +25,7 @@ public class Product {
     private String plantingGuide;
     private Integer hasSku;
     private String unit;
+    private Long userId;
     private String contactPhone;
     private String address;
     private Integer minQuantity;
