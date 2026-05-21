@@ -45,9 +45,5 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowCredentials(true);
     }
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/file/**")
-                .addResourceLocations("file:./uploads/");
-    }
+    // File serving now handled by UploadController.download() via MinIO
 }

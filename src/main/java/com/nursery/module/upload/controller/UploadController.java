@@ -1,18 +1,17 @@
 package com.nursery.module.upload.controller;
 
-import cn.hutool.core.util.IdUtil;
+import com.nursery.common.MinioService;
 import com.nursery.common.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,20 +21,8 @@ public class UploadController {
 
     private static final Logger log = LoggerFactory.getLogger(UploadController.class);
 
-    @Value("${upload.path:./uploads/}")
-    private String uploadPath;
-
-    private File getUploadDir() {
-        Path path = Paths.get(uploadPath);
-        if (!path.isAbsolute()) {
-            path = Paths.get(System.getProperty("user.dir")).resolve(path);
-        }
-        File dir = path.toFile();
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        return dir;
-    }
+    @Resource
+    private MinioService minioService;
 
     @PostMapping("/upload")
     public Result<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
@@ -43,26 +30,36 @@ public class UploadController {
             return Result.fail("上传文件为空");
         }
         try {
-            File dir = getUploadDir();
-            log.info("Upload directory: {}", dir.getAbsolutePath());
-
-            String originalName = file.getOriginalFilename();
-            String ext = ".jpg";
-            if (originalName != null && originalName.contains(".")) {
-                ext = originalName.substring(originalName.lastIndexOf("."));
-            }
-            String fileName = IdUtil.fastSimpleUUID() + ext;
-
-            File dest = new File(dir, fileName);
-            file.transferTo(dest);
-            log.info("File uploaded to: {}", dest.getAbsolutePath());
-
+            String url = minioService.upload(file);
+            log.info("File uploaded to MinIO: {}", url);
             Map<String, String> result = new HashMap<>();
-            result.put("url", "/api/file/" + fileName);
+            result.put("url", url);
             return Result.ok(result);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("File upload failed", e);
             return Result.fail("文件上传失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{objectName}")
+    public void download(@PathVariable String objectName, HttpServletResponse response) {
+        try (InputStream in = minioService.download(objectName);
+             OutputStream out = response.getOutputStream()) {
+            String contentType = "image/jpeg";
+            if (objectName.endsWith(".png")) contentType = "image/png";
+            else if (objectName.endsWith(".gif")) contentType = "image/gif";
+            else if (objectName.endsWith(".webp")) contentType = "image/webp";
+            else if (objectName.endsWith(".mp4")) contentType = "video/mp4";
+            response.setContentType(contentType);
+            response.setHeader("Cache-Control", "public, max-age=86400");
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+        } catch (Exception e) {
+            log.error("File download failed: {}", objectName, e);
+            response.setStatus(404);
         }
     }
 }

@@ -160,11 +160,31 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         return images;
     }
 
+    /**
+     * 分页查询当前用户的订单列表
+     *
+     * @param status 订单状态，-1表示查询所有状态，>=0表示查询指定状态
+     * @param page   页码（从1开始）
+     * @param size   每页大小
+     * @return 分页后的订单列表
+     */
     public Page<Order> list(int status, int page, int size) {
+        // 1. 创建 Lambda 查询构造器，用于构建类型安全的查询条件
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+
+        // 2. 添加固定条件：只查询当前登录用户（通过 TokenContext 获取 userId）的订单
+//        wrapper.eq(Order::getUserId, getUserId());
         wrapper.eq(Order::getUserId, getUserId());
-        if (status >= 0) wrapper.eq(Order::getStatus, status);
+        // 3. 添加动态条件：如果 status >= 0，则额外过滤指定状态的订单；否则查询该用户的所有状态订单
+        if (status >= 0) {
+            wrapper.eq(Order::getStatus, status);
+        }
+
+        // 4. 设置排序规则：按创建时间降序排列（最新的订单排在前面）
         wrapper.orderByDesc(Order::getCreateTime);
+
+        // 5. 执行分页查询并返回结果
+        // new Page<>(page, size) 创建分页对象，wrapper 传入查询条件
         return page(new Page<>(page, size), wrapper);
     }
 

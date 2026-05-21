@@ -1,6 +1,5 @@
 package com.nursery.module.product.service;
 
-import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -11,15 +10,10 @@ import com.nursery.module.product.entity.ProductImage;
 import com.nursery.module.product.mapper.ProductMapper;
 import com.nursery.module.product.mapper.ProductSkuMapper;
 import com.nursery.module.product.mapper.ProductImageMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,28 +151,10 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return product;
     }
 
-    @Value("${upload.path:./uploads/}")
-    private String uploadPath;
+    @Resource
+    private com.nursery.common.MinioService minioService;
 
     public String uploadImage(MultipartFile file) {
-        try {
-            Path path = Paths.get(uploadPath);
-            if (!path.isAbsolute()) {
-                path = Paths.get(System.getProperty("user.dir")).resolve(path);
-            }
-            File dir = path.toFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            String originalName = file.getOriginalFilename();
-            String ext = (originalName != null && originalName.contains("."))
-                    ? originalName.substring(originalName.lastIndexOf(".")) : ".jpg";
-            String fileName = IdUtil.fastSimpleUUID() + ext;
-            File dest = new File(dir, fileName);
-            file.transferTo(dest);
-            return "/api/file/" + fileName;
-        } catch (IOException e) {
-            throw new RuntimeException("图片上传失败: " + e.getMessage(), e);
-        }
+        return minioService.upload(file);
     }
 }

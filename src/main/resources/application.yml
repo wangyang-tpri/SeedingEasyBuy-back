@@ -30,6 +30,12 @@ jwt:
   secret: nursery-jwt-secret-key-2025
   expiration: 2592000
 
+minio:
+  endpoint: http://localhost:9000  # MinIO 服务地址
+  access-key: minioadmin           # 默认账号
+  secret-key: minioadmin           # 默认密码
+  bucket-name: nurseryapp         # 存储桶名称（相当于文件夹）
+
 upload:
   path: ./uploads/
 
