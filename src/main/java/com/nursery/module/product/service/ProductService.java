@@ -86,7 +86,8 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     public Page<Product> search(String keyword, int page, int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, Constants.PRODUCT_ON_SHELF)
-               .like(Product::getName, keyword);
+               .and(w -> w.like(Product::getName, keyword)
+                          .or().like(Product::getSubtitle, keyword));
         return page(new Page<>(page, size), wrapper);
     }
 

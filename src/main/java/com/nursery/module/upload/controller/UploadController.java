@@ -4,14 +4,16 @@ import com.nursery.common.MinioService;
 import com.nursery.common.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +25,9 @@ public class UploadController {
 
     @Resource
     private MinioService minioService;
+
+    @Value("${upload.path:./uploads/}")
+    private String uploadPath;
 
     @PostMapping("/upload")
     public Result<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
@@ -43,7 +48,8 @@ public class UploadController {
 
     @GetMapping("/{objectName}")
     public void download(@PathVariable String objectName, HttpServletResponse response) {
-        try (InputStream in = minioService.download(objectName);
+        // Try MinIO first, fall back to local file system
+        try (InputStream in = getStream(objectName);
              OutputStream out = response.getOutputStream()) {
             String contentType = "image/jpeg";
             if (objectName.endsWith(".png")) contentType = "image/png";
@@ -62,4 +68,32 @@ public class UploadController {
             response.setStatus(404);
         }
     }
+
+        /**
+         * 获取文件输入流，优先从MinIO对象存储下载，失败时降级到本地文件系统
+         *
+         * @param objectName 文件对象名称（路径）
+         * @return 文件输入流
+         * @throws IOException 当MinIO和本地文件系统都找不到文件时抛出异常
+         */
+        private InputStream getStream(String objectName) throws IOException {
+            try {
+                return minioService.download(objectName);
+            } catch (Exception e) {
+                log.info("MinIO miss, trying local: {}", objectName);
+
+                // 解析本地文件路径，确保使用绝对路径
+                Path path = Paths.get(uploadPath);
+                if (!path.isAbsolute()) {
+                    path = Paths.get(System.getProperty("user.dir")).resolve(path);
+                }
+
+                // 检查本地文件是否存在并返回输入流
+                File file = new File(path.toFile(), objectName);
+                if (file.exists()) {
+                    return Files.newInputStream(file.toPath());
+                }
+                throw new FileNotFoundException("File not found: " + objectName);
+            }
+        }
 }
