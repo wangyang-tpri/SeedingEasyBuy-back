@@ -113,10 +113,17 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         }
     }
 
-    public List<Product> myProducts(Long userId) {
+    public Page<Product> myProducts(Long userId, String keyword, Integer status, int page, int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getUserId, userId).orderByDesc(Product::getCreateTime);
-        return list(wrapper);
+        wrapper.eq(Product::getUserId, userId);
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(Product::getName, keyword);
+        }
+        if (status != null) {
+            wrapper.eq(Product::getStatus, status);
+        }
+        wrapper.orderByDesc(Product::getCreateTime);
+        return page(new Page<>(page, size), wrapper);
     }
 
     public Product create(Product product, List<String> imageUrls) {

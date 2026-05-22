@@ -105,9 +105,14 @@ public class ProductController {
     }
 
     @GetMapping("/my")
-    public Result<List<Product>> myProducts() {
+    public Result<PageResult<Product>> myProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
         Long userId = TokenContext.getUserId();
-        return Result.ok(productService.myProducts(userId));
+        Page<Product> result = productService.myProducts(userId, keyword, status, page, size);
+        return Result.ok(new PageResult<>(result.getRecords(), result.getTotal(), result.getSize(), result.getCurrent()));
     }
 
     @PutMapping("/update/{id}")
