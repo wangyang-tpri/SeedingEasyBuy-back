@@ -79,6 +79,7 @@ public class ProductController {
         product.setStock(body.get("stock") != null ? Integer.valueOf(body.get("stock").toString()) : 0);
         product.setUnit((String) body.get("unit"));
         product.setUserId(TokenContext.getUserId());
+        product.setTag(body.get("tag") != null ? Integer.valueOf(body.get("tag").toString()) : 0);
         product.setContactPhone((String) body.get("phone"));
         product.setAddress((String) body.get("address"));
         product.setVideo((String) body.get("video"));
@@ -121,6 +122,7 @@ public class ProductController {
         if (body.containsKey("originalPrice")) product.setOriginalPrice(body.get("originalPrice") != null ? new BigDecimal(body.get("originalPrice").toString()) : null);
         if (body.containsKey("stock")) product.setStock(Integer.valueOf(body.get("stock").toString()));
         if (body.containsKey("unit")) product.setUnit((String) body.get("unit"));
+        if (body.containsKey("tag")) product.setTag(Integer.valueOf(body.get("tag").toString()));
         if (body.containsKey("phone")) product.setContactPhone((String) body.get("phone"));
         if (body.containsKey("address")) product.setAddress((String) body.get("address"));
         if (body.containsKey("video")) product.setVideo((String) body.get("video"));

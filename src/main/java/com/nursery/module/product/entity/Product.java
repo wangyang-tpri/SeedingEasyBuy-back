@@ -29,6 +29,7 @@ public class Product {
     private String contactPhone;
     private String address;
     private Integer minQuantity;
+    private Integer tag;
     private Integer status;
     private Integer sort;
     @TableField(fill = FieldFill.INSERT)

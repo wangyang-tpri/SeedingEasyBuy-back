@@ -72,6 +72,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     public Page<Product> recommend(int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, Constants.PRODUCT_ON_SHELF)
+               .eq(Product::getTag, 1)
                .orderByDesc(Product::getSales).orderByDesc(Product::getCreateTime);
         return page(new Page<>(1, size), wrapper);
     }
@@ -79,6 +80,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     public Page<Product> newProducts(int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, Constants.PRODUCT_ON_SHELF)
+               .eq(Product::getTag, 2)
                .orderByDesc(Product::getCreateTime);
         return page(new Page<>(1, size), wrapper);
     }
