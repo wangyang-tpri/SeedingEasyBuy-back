@@ -16,6 +16,7 @@ public class User {
     private String phone;
     private Integer gender;
     private Integer userType;
+    private Long roleId;
     private Integer status;
     private Integer points;
     private LocalDateTime lastLogin;
