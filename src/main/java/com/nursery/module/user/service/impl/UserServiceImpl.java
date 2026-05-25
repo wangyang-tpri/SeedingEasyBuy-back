@@ -40,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             user = new User();
             user.setPhone(phone);
-            user.setOpenid("");
+            user.setOpenid(phone);
             user.setNickname("手机用户");
             user.setStatus(0);
             user.setUserType(0);

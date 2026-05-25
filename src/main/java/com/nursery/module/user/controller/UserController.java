@@ -35,6 +35,7 @@ public class UserController {
 
     @PostMapping("/login_by_phone")
     public Result<LoginResponse> loginByPhone(@RequestBody Map<String, String> body) {
+        System.out.println("phone" + body.get("phone"));
         String phone = body.get("phone");
         if (StrUtil.isBlank(phone)) {
             return Result.fail("手机号不能为空");
