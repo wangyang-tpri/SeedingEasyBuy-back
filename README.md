@@ -115,40 +115,6 @@ java -jar target/nursery-app-1.0.0.jar
 ```
 
 启动后服务默认地址：`http://localhost:8080/api`
-
-## API 文档
-
-启动服务后访问 Swagger UI 在线文档：
-
-- Swagger UI：`http://localhost:8080/api/swagger-ui.html`
-- OpenAPI JSON：`http://localhost:8080/api/v3/api-docs`
-
-### 主要接口一览
-
-| 模块 | 方法 | 路径 | 说明 |
-| ---- | ---- | ---- | ---- |
-| 认证 | POST | `/api/auth/login` | 微信 code 登录（MVP：code 即 openid） |
-| 认证 | POST | `/api/auth/login_by_phone` | 手机号登录 |
-| 用户 | GET/PUT | `/api/user/info` | 查询 / 修改个人信息 |
-| 商品 | GET | `/api/product/page` | 分页查询（支持分类、关键字、排序、价格区间） |
-| 商品 | GET | `/api/product/detail/{id}` | 商品详情 |
-| 商品 | GET | `/api/product/recommend` | 推荐商品 |
-| 商品 | GET | `/api/product/new` | 最新上架 |
-| 商品 | GET | `/api/product/search` | 关键字搜索 |
-| 商品 | POST | `/api/product/add` | 发布商品 |
-| 商品 | GET | `/api/product/my` | 我的商品 |
-| 商品 | PUT/POST | `/api/product/update/{id}`、`/api/product/status/{id}` | 编辑 / 上下架 |
-| 分类 | GET | `/api/category/list` | 分类列表（公开） |
-| 轮播图 | GET | `/api/banner/list` | 轮播图列表（公开） |
-| 购物车 | GET/POST/PUT/DELETE | `/api/cart/list`、`/add`、`/update`、`/delete/{id}` | 购物车操作 |
-| 订单 | POST | `/api/order/create` | 创建订单 |
-| 订单 | GET | `/api/order/list`、`/detail/{id}` | 订单列表 / 详情 |
-| 订单 | POST | `/api/order/cancel/{id}`、`/pay/{id}`、`/confirm_receive/{id}` | 取消 / 支付 / 确认收货 |
-| 地址 | GET/POST/PUT/DELETE | `/api/address/list`、`/add`、`/update`、`/delete/{id}`、`/default/{id}` | 收货地址管理 |
-| 收藏 | GET/POST | `/api/collection/list`、`/add`、`/check/{productId}` | 收藏管理 |
-| 上传 | POST | `/api/file/upload` | 文件上传（MinIO） |
-| 上传 | GET | `/api/file/{objectName}` | 文件访问 |
-
 ## 认证机制
 
 - 登录成功返回 JWT Token，后续请求在请求头携带 `Authorization: Bearer <token>`。
@@ -190,3 +156,7 @@ java -jar target/nursery-app-1.0.0.jar
 - [ ] 完善优惠券、评价模块接口
 - [ ] 管理端商品审核流程
 - [ ] 订单售后流程
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
